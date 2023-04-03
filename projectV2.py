@@ -11,7 +11,7 @@ punctuation = set(string.punctuation)
 stemmer = PorterStemmer()
 
 """
-    - Implementare il nasted dictionary
+    - Implementare il nasted dictionary -- FATTO
 
         {
         "term1": {
@@ -29,16 +29,44 @@ stemmer = PorterStemmer()
     }
 
 
-    - We don't use hash table because with hash we can't look for prefixes
+    - We don't use hash table because with hash we can't look for prefixes --FATTO
+
+    - maintaining multiple indexes can make insertion and modification more complex, 
+        as you have to update both indexes. However, the tradeoff is often worth it 
+        in terms of improved query performance.
+        Inverted indexes are optimized for efficient querying, so it's usually 
+        more important to optimize for fast search rather than fast insertion/modification.
+
+    -  For terms with a large number of distinct postings lists, the hash table 
+        can be replaced with a balanced tree to reduce the memory footprint and improve 
+        lookup times.
+
+    - my_dict = {('my_key', [1, 2]): 'my_value'}
+        This will be the structure of out permuted index
+
 
 
 """
+
+def permutation_word(word_original : string):
+    perm = list()
+    word = word_original + "$"
+    perm.append(word)
+    for i in range(1, len(word)):
+        word_1 = word[i:]
+        word_2 = word[0:i]
+        word_3 = word_1 + word_2
+        perm.append(word_3)
+    
+    return (word_original, perm)
+         
 
 
 class inverted_index:
 
     def __init__(self):
         self.inverted_index = {}
+        self.permuted_index = {}
         self.n_docs = 0
 
     def __init__(self, documents):
@@ -95,6 +123,21 @@ class inverted_index:
         self.n_docs = len(documents)
 
         return self.inverted_index
+    
+    
+    # def create_permuted_index(self, documents):
+
+    #     for doc_id, doc in enumerate(documents):
+    #         for term in word_tokenize(doc):
+    #             i = 0
+    #             term = term.casefold()
+    #             term_split = term.split('\'')
+    #             for term_no_ap in term_split:
+    #                 if term_no_ap not in stop_words and term_no_ap not in punctuation and term_no_ap != '': #remove stop words and punctation
+    #                     term_no_ap = stemmer.stem(term_no_ap)
+
+    #                     # permutation process
+
     
     def add_doc(self, doc):
 
@@ -228,7 +271,7 @@ class inverted_index:
                 postings.append(term)
             else:
                 sub = self.find_nearest(term, dictionary, keep_first=True)
-                print("{} nto found. Did you mean {}?".format(term, sub))
+                print("{} not found. Did you mean {}?".format(term, sub))
                 postings.append(sub)
         
         return self._phrase_query(postings)
@@ -285,5 +328,9 @@ query_phrase = "semper commodo"
 # print("Time for query phrase: ", timeit_test(inverted_doc.phrase_query(query_phrase), 100000000))
 
 
-query_wrong = "semper commmodo"
-print("Time for query with sc: ", timeit_test(inverted_doc.phrase_query_sc(query_wrong), 100000))
+query_wrong = "lorum ipsimum"
+print("Result of query '",query_wrong, "': ", inverted_doc.phrase_query_sc(query_wrong))
+# print("Time for query with sc: ", timeit_test(inverted_doc.phrase_query_sc(query_wrong), 100000))
+
+
+print(permutation_word("cats"))
