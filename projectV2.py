@@ -58,7 +58,7 @@ def permutation_word(word_original : string):
         word_3 = word_1 + word_2
         perm.append(word_3)
     
-    return (word_original, perm)
+    return (word_original, tuple(perm))
          
 
 
@@ -67,34 +67,32 @@ class inverted_index:
     def __init__(self):
         self.inverted_index = {}
         self.permuted_index = {}
+        self.n_docs_2 = 0
         self.n_docs = 0
 
-    def __init__(self, documents):
-        self.inverted_index = {}
-        for doc_id, doc in enumerate(documents):
-            i = 0
-            for term in word_tokenize(doc):   # also doc.split() can be used but it's difficult to caputure punctuation
-                term = term.casefold() #lowercase, more aggressive that lower()
-                term_split = term.split('\'')  # split apostrophe words and then save only important words
-                for term_no_ap in term_split:
-                    if term_no_ap not in stop_words and term_no_ap not in punctuation and term_no_ap != '': #remove stop words and punctation
-                        term_no_ap = stemmer.stem(term_no_ap)
-                        if self.inverted_index.get(term_no_ap) is not None:
-                            if self.inverted_index[term_no_ap].get(doc_id) is not None:
-                                self.inverted_index[term_no_ap][doc_id].append(i) 
-                            else:
-                                self.inverted_index[term_no_ap][doc_id] = [i]
-                        else:
-                            self.inverted_index[term_no_ap] = {}
-                            self.inverted_index[term_no_ap][doc_id] = [i]
+    # def __init__(self, documents):
+    #     self.inverted_index = {}
+    #     for doc_id, doc in enumerate(documents):
+    #         i = 0
+    #         for term in word_tokenize(doc):   # also doc.split() can be used but it's difficult to caputure punctuation
+    #             term = term.casefold() #lowercase, more aggressive that lower()
+    #             term_split = term.split('\'')  # split apostrophe words and then save only important words
+    #             for term_no_ap in term_split:
+    #                 if term_no_ap not in stop_words and term_no_ap not in punctuation and term_no_ap != '': #remove stop words and punctation
+    #                     term_no_ap = stemmer.stem(term_no_ap)
+    #                     if self.inverted_index.get(term_no_ap) is not None:
+    #                         if self.inverted_index[term_no_ap].get(doc_id) is not None:
+    #                             self.inverted_index[term_no_ap][doc_id].append(i) 
+    #                         else:
+    #                             self.inverted_index[term_no_ap][doc_id] = [i]
+    #                     else:
+    #                         self.inverted_index[term_no_ap] = {}
+    #                         self.inverted_index[term_no_ap][doc_id] = [i]
 
 
-                i += 1
+    #             i += 1
 
-
-                            
-
-        self.n_docs = len(documents)
+    #     self.n_docs = len(documents)
 
     def __str__(self):
         return str(self.inverted_index)
@@ -103,7 +101,7 @@ class inverted_index:
 
         for doc_id, doc in enumerate(documents):
             for term in word_tokenize(doc):   # also doc.split() can be used but it's difficult to caputure punctuation
-                i = 0
+                i = 0 #It's the position int he document of the term
                 term = term.casefold() #lowercase, more aggressive that lower()
                 term_split = term.split('\'')  # split apostrophe words and then save only important words
                 for term_no_ap in term_split:
@@ -125,18 +123,34 @@ class inverted_index:
         return self.inverted_index
     
     
-    # def create_permuted_index(self, documents):
+    def create_permuted_index(self, documents):
 
-    #     for doc_id, doc in enumerate(documents):
-    #         for term in word_tokenize(doc):
-    #             i = 0
-    #             term = term.casefold()
-    #             term_split = term.split('\'')
-    #             for term_no_ap in term_split:
-    #                 if term_no_ap not in stop_words and term_no_ap not in punctuation and term_no_ap != '': #remove stop words and punctation
-    #                     term_no_ap = stemmer.stem(term_no_ap)
+        for doc_id, doc in enumerate(documents):
+            for term in word_tokenize(doc):
+                i = 0
+                term = term.casefold()
+                term_split = term.split('\'')
+                for term_no_ap in term_split:
+                    if term_no_ap not in stop_words and term_no_ap not in punctuation and term_no_ap != '': #remove stop words and punctation
+                        term_no_ap = stemmer.stem(term_no_ap)
 
-    #                     # permutation process
+                        # permutation process
+                        tuple_key = permutation_word(term_no_ap)
+
+                        if self.permuted_index.get(tuple_key) is not None:
+                            if self.permuted_index[tuple_key].get(doc_id) is not None:
+
+                                self.permuted_index[tuple_key][doc_id].append(i)
+                            else:
+                                self.permuted_index[tuple_key][doc_id] = [i]
+                        else:
+                            self.permuted_index[tuple_key] = {}
+                            self.permuted_index[tuple_key][doc_id] = [i]
+
+                i += 1
+        self.n_docs_2 = len(documents)
+
+        return self.permuted_index
 
     
     def add_doc(self, doc):
@@ -308,7 +322,8 @@ with open("data/lorem_ipsum", "r") as f:
     documents = [line.split("\n")[0] for line in f]
 f.close()
 
-inverted_doc = inverted_index(documents)
+inverted_doc = inverted_index()
+inverted_doc.create_indexes(documents)
 # print(inverted_doc)
 
 new_doc = "Ehi, how it is my friend Giovanni? I like his cats"
@@ -333,4 +348,7 @@ print("Result of query '",query_wrong, "': ", inverted_doc.phrase_query_sc(query
 # print("Time for query with sc: ", timeit_test(inverted_doc.phrase_query_sc(query_wrong), 100000))
 
 
-print(permutation_word("cats"))
+
+new_index = inverted_index()
+print(new_index.create_permuted_index(documents))
+
