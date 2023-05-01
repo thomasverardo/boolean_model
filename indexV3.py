@@ -23,44 +23,81 @@ def permutation_word(word_original):
     return (word_original, tuple(perm))
      
 
+class Node:
+    def __init__(self, term, doc_id):
+        self.term = term
+        self.posting = [doc_id]
+        self.left = None
+        self.right = None
+
 
 class Index:
 
-    def __init__(self):
+    def __init__(self, documents):
         self.inverted_index = {}
-        self.permuted_index = {}
-        self.n_docs_2 = 0
         self.n_docs = 0
-
-    # def __init__(self, documents):
-    #     self.inverted_index = {}
-    #     for doc_id, doc in enumerate(documents):
-    #         i = 0
-    #         for term in word_tokenize(doc):   # also doc.split() can be used but it's difficult to caputure punctuation
-    #             term = term.casefold() #lowercase, more aggressive that lower()
-    #             term_split = term.split('\'')  # split apostrophe words and then save only important words
-    #             for term_no_ap in term_split:
-    #                 if term_no_ap not in stop_words and term_no_ap not in punctuation and term_no_ap != '': #remove stop words and punctation
-    #                     term_no_ap = stemmer.stem(term_no_ap)
-    #                     if self.inverted_index.get(term_no_ap) is not None:
-    #                         if self.inverted_index[term_no_ap].get(doc_id) is not None:
-    #                             self.inverted_index[term_no_ap][doc_id].append(i) 
-    #                         else:
-    #                             self.inverted_index[term_no_ap][doc_id] = [i]
-    #                     else:
-    #                         self.inverted_index[term_no_ap] = {}
-    #                         self.inverted_index[term_no_ap][doc_id] = [i]
-
-
-    #             i += 1
-
-    #     self.n_docs = len(documents)
+        self.root = None
+        self._build_inverted_index(documents)
 
     def __str__(self):
         return str(self.inverted_index)
+    
+    
+    
+    def print_inorder(self):
+        node = self.root
+        toprint = ""
+        return self._inorder(node)
 
-    # deprecated method
-    def create_indexes(self, documents):
+    def _inorder(self, node):
+        if node is not None:
+            l = self._inorder(node.left)
+            m = node.term + ", "
+            r = self._inorder(node.right)
+            return l+m+r
+        else:
+            return ''
+
+
+    def insert(self, node, key, doc_id):
+        
+        if node is None:
+            return Node(key, doc_id)
+        
+        if key < node.term:
+            node.left = self.insert(node.left, key, doc_id)
+        else:
+            node.right = self.insert(node.right, key, doc_id)
+        
+        return node
+    
+    def search(self, term):
+        node = self.root
+        while node:
+            if term == node.term:
+                return node.posting
+            elif term < node.term:
+                node = node.left
+            else:
+                node = node.right
+        return None
+    
+    
+    def _add_doc_id(self, node, term, i):
+        
+        if node.term == term:
+            node.posting.append(i)
+        
+        elif term < node.term:
+            node.left = self._add_doc_id(node.left, term, i)
+        else:
+            node.right = self._add_doc_id(node.right, term, i)
+
+        return node
+        
+
+
+    def _build_inverted_index(self, documents):
 
         for doc_id, doc in enumerate(documents):
             i = 0 #It's the position int he document of the term
@@ -71,12 +108,24 @@ class Index:
                 for term_no_ap in term_split:
                     if term_no_ap not in stop_words and term_no_ap not in punctuation and term_no_ap != '': #remove stop words and punctation
                         term_no_ap = stemmer.stem(term_no_ap)
+
+                        #is already in the index this word?
                         if self.inverted_index.get(term_no_ap) is not None:
+                            # term is already inserted into the bst
+                            # So we have to serach and modify his posting list
+                            self.root = self._add_doc_id(self.root, term_no_ap, doc_id)
+
+
                             if self.inverted_index[term_no_ap].get(doc_id) is not None:
                                 self.inverted_index[term_no_ap][doc_id].append(i) 
                             else:
                                 self.inverted_index[term_no_ap][doc_id] = [i]
+
                         else:
+
+                            # Now insert on the binary tree 
+                            self.root = self.insert(self.root, term_no_ap, doc_id)
+                            
                             self.inverted_index[term_no_ap] = {}
                             self.inverted_index[term_no_ap][doc_id] = [i]
 
@@ -86,38 +135,7 @@ class Index:
 
         return self.inverted_index
     
-    
-    def create_permuted_index(self, documents):
-
-        for doc_id, doc in enumerate(documents):
-            i = 0
-            for term in word_tokenize(doc):
-                
-                term = term.casefold()
-                term_split = term.split('\'')
-                for term_no_ap in term_split:
-                    if term_no_ap not in stop_words and term_no_ap not in punctuation and term_no_ap != '': #remove stop words and punctation
-                        term_no_ap = stemmer.stem(term_no_ap)
-
-                        # permutation process
-                        tuple_key = permutation_word(term_no_ap)
-
-                        if self.permuted_index.get(tuple_key) is not None:
-                            if self.permuted_index[tuple_key].get(doc_id) is not None:
-
-                                self.permuted_index[tuple_key][doc_id].append(i)
-                            else:
-                                self.permuted_index[tuple_key][doc_id] = [i]
-                        else:
-                            self.permuted_index[tuple_key] = {}
-                            self.permuted_index[tuple_key][doc_id] = [i]
-
-                i += 1
-        self.n_docs_2 = len(documents)
-
-        return self.permuted_index
-
-    
+    # da fareeee
     def add_doc(self, doc):
 
         new_doc_id = self.n_docs
@@ -144,7 +162,7 @@ class Index:
         self.n_docs = new_doc_id + 1
 
 
-    def query(self, query_string):
+    def boolean_query(self, query_string):
 
         # Use set intersection, union and difference because more performant 
 
@@ -179,10 +197,9 @@ class Index:
             #         res = res.intersection(self.inverted_index[split_query[i+1]].keys())
             #         print("ciao")
         return res
-
     
     
-
+    # per forza si usa la dictionary because ha le position
     def _phrase_query(self, terms):
         """
         Private method to perform a phrase query on the inverted index.
@@ -268,10 +285,17 @@ class Index:
         terms = [stemmer.stem(term) for term in query.split(" ")]
         return self._phrase_query(terms)
     
-
-# implement this
     def wildcard_query(self, query):
-        perm = permutation_word(query)
-        
-        print("aaa")
-    
+
+        r_part = query[:-1]
+        return self._wildcard(r_part, self.root)
+
+    def _wildcard(self, r_part, node):
+        aaa = node.term[:len(r_part)]
+        if node is not None:
+            if node.term[:len(r_part)] == r_part:
+                return self._inorder(node)
+            elif r_part < node.term:
+                self._wildcard(r_part, node.left)
+            else:
+                self._wildcard(r_part, node.right)

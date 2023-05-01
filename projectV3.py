@@ -1,5 +1,5 @@
 import time
-from index import Index
+from indexV3 import Index
 
 
 """
@@ -68,51 +68,40 @@ def timeit_test(fun, times):
 
 #           MAIN
 
-# documents = ["The cat is on the table. NAME, cat",
-#             "What is the cat's name? Giuseppe Nigro",
-#             "Can you pass me the hammer? I need it!",
-#             "It was passed"
-#             #"cliche, clichè",
-#             #"color, colour"
-#             ]
+
 
 with open("data/lorem_ipsum", "r") as f:
     documents = [line.split("\n")[0] for line in f]
 f.close()
 
-indexes = Index()
-indexes.create_indexes(documents)
-# inverted_doc.create_permuted_index(documents)
 
-# print(inverted_doc)
+indexes = Index(documents)
+
+print(indexes.print_inorder())
 
 new_doc = "Ehi, how it is my friend Giovanni? I like his cats"
 
-indexes.add_doc(new_doc)
+# indexes.add_doc(new_doc)
 
-# print(inverted_doc)
 
-query = "semper AND commodo"
+query = "semper AND commodo OR accumsan"
 
-# print("Result of query '", query, "': ", inverted_doc.query(query))
+print("Result of query '", query, "': ", indexes.boolean_query(query))
 
 query_phrase = "Lorem ipsum dolor sit"
 print("Result of query prof '",query_phrase,"': ",indexes.phrase_query(query_phrase))
 
-# print("Time for query: ", timeit_test(inverted_doc.query(query), 100000000))
-# print("Time for query phrase: ", timeit_test(inverted_doc.phrase_query(query_phrase), 100000000))
+# # print("Time for query: ", timeit_test(inverted_doc.query(query), 100000000))
+# # print("Time for query phrase: ", timeit_test(inverted_doc.phrase_query(query_phrase), 100000000))
 
 
-query_wrong = "lorum ipsimum"
+query_wrong = "lorum ipsimum dolor sut"
 print("Result of query '",query_wrong, "': ", indexes.phrase_query_sc(query_wrong))
-# print("Time for query with sc: ", timeit_test(inverted_doc.phrase_query_sc(query_wrong), 100000))
+# # print("Time for query with sc: ", timeit_test(inverted_doc.phrase_query_sc(query_wrong), 100000))
 
 
+wildcard_query = "tem*"
+print(indexes.wildcard_query(wildcard_query))
 
-indexes.create_permuted_index(documents)
-
-wildcard_query = "lor*m"
-indexes.wildcard_query(wildcard_query)
-
-print("aaa")
+# print("aaa")
 
