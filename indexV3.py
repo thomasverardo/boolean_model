@@ -292,17 +292,21 @@ class Index:
     
     def wildcard_query(self, query):
 
-        # r_part = query[:-1]
-        r_part = query[1:]
+        if query[0] == "*":
+            r_part = query[::-1][:-1]
+            node = self.root_inv
+            inv = True
+        if query[-1] == "*":
+            r_part = query[:-1]
+            node = self.root
+            inv = False
 
-        # node = self.root
-        node = self.root_inv
+
         while node:
-            # term = node.term[:len(r_part)]
-            term = node.term[-len(r_part):]
+            term = node.term[:len(r_part)]
             if term == r_part:
                 # Thanks to this, we start searching only in the subtree starting from node
-                return self._wildcard(node, r_part, [])
+                return self._wildcard(node, r_part, [], inv)
             elif r_part < term:
                 node = node.left
             else:
@@ -310,15 +314,18 @@ class Index:
         
         return None
 
-    def _wildcard(self, node, r_part, full_terms):
+    def _wildcard(self, node, r_part, full_terms, inv):
 
         if node is not None:
             
-            full_terms = self._wildcard(node.left, r_part, full_terms)
-            full_terms = self._wildcard(node.right, r_part, full_terms)
+            full_terms = self._wildcard(node.left, r_part, full_terms, inv)
+            full_terms = self._wildcard(node.right, r_part, full_terms, inv)
             
             if node.term[:len(r_part)] == r_part:
-                full_terms.append(node.term)
+                if inv:
+                    full_terms.append(node.term[::-1])
+                else:
+                    full_terms.append(node.term)
                 return full_terms
         
         return full_terms

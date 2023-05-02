@@ -129,5 +129,5 @@ documents = read_files(file_name)
 cicero = Index(documents)
 
 print(cicero.boolean_query("Rome and friend and fatherless"))
-print(cicero.wildcard_query("*d")) # Non funzionaaaaaaa
+print(cicero.wildcard_query("go*"))
 
