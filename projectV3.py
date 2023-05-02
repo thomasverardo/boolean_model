@@ -52,6 +52,7 @@ from indexV3 import Index
         method that uses intersection and union method; my method is easly to understand
 
 
+    - When constructing bst, we have to start from the middle of all words.
 
 """
 
@@ -63,6 +64,17 @@ def timeit_test(fun, times):
     end = time.time()
     finish = (end-start)/times
     return finish
+
+
+def read_files(file_names):
+
+    documents = []
+    for file in file_names:
+        with open("data/"+file, "r") as f:
+            documents.append(f.read())
+        f.close()
+    
+    return documents
     
 
 
@@ -70,38 +82,52 @@ def timeit_test(fun, times):
 
 
 
-with open("data/lorem_ipsum", "r") as f:
-    documents = [line.split("\n")[0] for line in f]
-f.close()
+# with open("data/lorem_ipsum", "r") as f:
+#     documents = [line.split("\n")[0] for line in f]
+# f.close()
 
 
-indexes = Index(documents)
+# indexes = Index(documents)
 
-print(indexes.print_inorder())
+# print(indexes.print_inorder())
 
-new_doc = "Ehi, how it is my friend Giovanni? I like his cats"
+# new_doc = "Ehi, how it is my friend Giovanni? I like his cats"
 
-# indexes.add_doc(new_doc)
-
-
-query = "semper AND commodo OR accumsan"
-
-print("Result of query '", query, "': ", indexes.boolean_query(query))
-
-query_phrase = "Lorem ipsum dolor sit"
-print("Result of query prof '",query_phrase,"': ",indexes.phrase_query(query_phrase))
-
-# # print("Time for query: ", timeit_test(inverted_doc.query(query), 100000000))
-# # print("Time for query phrase: ", timeit_test(inverted_doc.phrase_query(query_phrase), 100000000))
+# # indexes.add_doc(new_doc)
 
 
-query_wrong = "lorum ipsimum dolor sut"
-print("Result of query '",query_wrong, "': ", indexes.phrase_query_sc(query_wrong))
-# # print("Time for query with sc: ", timeit_test(inverted_doc.phrase_query_sc(query_wrong), 100000))
+# query = "semper AND commodo OR accumsan"
+
+# print("Result of query '", query, "': ", indexes.boolean_query(query))
+
+# query_phrase = "Lorem ipsum dolor sit"
+# print("Result of query prof '",query_phrase,"': ",indexes.phrase_query(query_phrase))
+
+# # # print("Time for query: ", timeit_test(inverted_doc.query(query), 100000000))
+# # # print("Time for query phrase: ", timeit_test(inverted_doc.phrase_query(query_phrase), 100000000))
 
 
-wildcard_query = "tem*"
-print(indexes.wildcard_query(wildcard_query))
+# query_wrong = "lorum ipsimum dolor sut"
+# print("Result of query '",query_wrong, "': ", indexes.phrase_query_sc(query_wrong))
+# # # print("Time for query with sc: ", timeit_test(inverted_doc.phrase_query_sc(query_wrong), 100000))
 
-# print("aaa")
+
+# wildcard_query = "tem*"
+# print(indexes.wildcard_query(wildcard_query))
+
+# # print("aaa")
+
+
+
+
+
+
+
+file_name = ["cicero_1", "cicero_2", "cicero_3"]
+documents = read_files(file_name)
+
+cicero = Index(documents)
+
+print(cicero.boolean_query("Rome and friend and fatherless"))
+print(cicero.wildcard_query("*d")) # Non funzionaaaaaaa
 

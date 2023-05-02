@@ -37,6 +37,7 @@ class Index:
         self.inverted_index = {}
         self.n_docs = 0
         self.root = None
+        self.root_inv = None
         self._build_inverted_index(documents)
 
     def __str__(self):
@@ -71,7 +72,7 @@ class Index:
         
         return node
     
-    def search(self, term):
+    def search_posting(self, term):
         node = self.root
         while node:
             if term == node.term:
@@ -99,6 +100,10 @@ class Index:
 
     def _build_inverted_index(self, documents):
 
+        # Sarebbe da sortare tutto l'array di documents e partire dal mediano
+        # In questo modo si costruisce un albero bilanciato
+        # Usare list.sort() tha as O(nlogn) time complexity
+
         for doc_id, doc in enumerate(documents):
             i = 0 #It's the position int he document of the term
             for term in word_tokenize(doc):   # also doc.split() can be used but it's difficult to caputure punctuation
@@ -114,7 +119,7 @@ class Index:
                             # term is already inserted into the bst
                             # So we have to serach and modify his posting list
                             self.root = self._add_doc_id(self.root, term_no_ap, doc_id)
-
+                            self.root_inv = self._add_doc_id(self.root_inv, term_no_ap[::-1], doc_id)
 
                             if self.inverted_index[term_no_ap].get(doc_id) is not None:
                                 self.inverted_index[term_no_ap][doc_id].append(i) 
@@ -125,6 +130,7 @@ class Index:
 
                             # Now insert on the binary tree 
                             self.root = self.insert(self.root, term_no_ap, doc_id)
+                            self.root_inv = self.insert(self.root_inv, term_no_ap[::-1], doc_id)
                             
                             self.inverted_index[term_no_ap] = {}
                             self.inverted_index[term_no_ap][doc_id] = [i]
@@ -175,7 +181,6 @@ class Index:
             res = set(self.inverted_index[split_query[0]].keys())
         for i in range(len(split_query)):
             if split_query[i].lower() == "and":
-                print("aa")
                 if split_query[i+1].lower() == "not":
                     not_doc = all_docs.difference(self.inverted_index[split_query[i+2]].keys())
                     res = res.intersection(not_doc)
@@ -183,7 +188,6 @@ class Index:
                     res = res.intersection(self.inverted_index[split_query[i+1]].keys())
 
             elif split_query[i].lower() == "or":
-                print("bb")
                 if split_query[i+1].lower() == "not":
                     not_doc = all_docs.difference(self.inverted_index[split_query[i+2]].keys())
                     res = res.union(not_doc)
@@ -284,18 +288,37 @@ class Index:
     def phrase_query(self, query):
         terms = [stemmer.stem(term) for term in query.split(" ")]
         return self._phrase_query(terms)
+
     
     def wildcard_query(self, query):
 
-        r_part = query[:-1]
-        return self._wildcard(r_part, self.root)
+        # r_part = query[:-1]
+        r_part = query[1:]
 
-    def _wildcard(self, r_part, node):
-        aaa = node.term[:len(r_part)]
-        if node is not None:
-            if node.term[:len(r_part)] == r_part:
-                return self._inorder(node)
-            elif r_part < node.term:
-                self._wildcard(r_part, node.left)
+        # node = self.root
+        node = self.root_inv
+        while node:
+            # term = node.term[:len(r_part)]
+            term = node.term[-len(r_part):]
+            if term == r_part:
+                # Thanks to this, we start searching only in the subtree starting from node
+                return self._wildcard(node, r_part, [])
+            elif r_part < term:
+                node = node.left
             else:
-                self._wildcard(r_part, node.right)
+                node = node.right
+        
+        return None
+
+    def _wildcard(self, node, r_part, full_terms):
+
+        if node is not None:
+            
+            full_terms = self._wildcard(node.left, r_part, full_terms)
+            full_terms = self._wildcard(node.right, r_part, full_terms)
+            
+            if node.term[:len(r_part)] == r_part:
+                full_terms.append(node.term)
+                return full_terms
+        
+        return full_terms
