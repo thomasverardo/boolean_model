@@ -115,7 +115,7 @@ def read_files(file_names):
 # wildcard_query = "tem*"
 # print(indexes.wildcard_query(wildcard_query))
 
-# # print("aaa")
+# print("aaa")
 
 
 
@@ -129,5 +129,5 @@ documents = read_files(file_name)
 cicero = Index(documents)
 
 print(cicero.boolean_query("Rome and friend and fatherless"))
-print(cicero.wildcard_query("go*"))
+print(cicero.wildcard_query("gorg*a"))
 

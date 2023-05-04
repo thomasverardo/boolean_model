@@ -10,30 +10,34 @@ stop_words = set(stopwords.words("english"))
 punctuation = set(string.punctuation)
 stemmer = PorterStemmer()
 
-def permutation_word(word_original):
-    perm = list()
-    word = word_original + "$"
-    perm.append(word)
-    for i in range(1, len(word)):
-        word_1 = word[i:]
-        word_2 = word[0:i]
-        word_3 = word_1 + word_2
-        perm.append(word_3)
-    
-    return (word_original, tuple(perm))
+
      
 
 class Node:
-    def __init__(self, term, doc_id):
+    def __init__(self, term: string, doc_id: int):
         self.term = term
         self.posting = [doc_id]
+        self.permutation = tuple() # forse serve solo per root e non root_inv
         self.left = None
         self.right = None
+
+    def permutation_words(self):
+        perm = list()
+        word = self.term + "$"
+        perm.append(word)
+        for i in range(1, len(word)):
+            word_1 = word[i:]
+            word_2 = word[0:i]
+            word_3 = word_1 + word_2
+            perm.append(word_3)
+        
+        self.permutation = tuple(perm)
+        return tuple(perm)
 
 
 class Index:
 
-    def __init__(self, documents):
+    def __init__(self, documents: list):
         self.inverted_index = {}
         self.n_docs = 0
         self.root = None
@@ -63,6 +67,25 @@ class Index:
     def insert(self, node, key, doc_id):
         
         if node is None:
+            new_node = Node(key, doc_id)
+            # Creation of permutation index for wildcard queries in the word
+            new_node.permutation_word()
+            return new_node
+        
+        if key < node.term:
+            node.left = self.insert(node.left, key, doc_id)
+        else:
+            node.right = self.insert(node.right, key, doc_id)
+        
+        return node
+    
+    def insert_inv(self, node, key, doc_id):
+        """
+        Create this second method used to insert only in the inverted bst
+        In this way I will create the permutation index only in the rigth index
+        """
+        
+        if node is None:
             return Node(key, doc_id)
         
         if key < node.term:
@@ -72,8 +95,9 @@ class Index:
         
         return node
     
-    def search_posting(self, term):
-        node = self.root
+    
+    def search_posting(self, term, node):
+
         while node:
             if term == node.term:
                 return node.posting
@@ -130,7 +154,7 @@ class Index:
 
                             # Now insert on the binary tree 
                             self.root = self.insert(self.root, term_no_ap, doc_id)
-                            self.root_inv = self.insert(self.root_inv, term_no_ap[::-1], doc_id)
+                            self.root_inv = self.insert_inv(self.root_inv, term_no_ap[::-1], doc_id)
                             
                             self.inverted_index[term_no_ap] = {}
                             self.inverted_index[term_no_ap][doc_id] = [i]
@@ -292,26 +316,39 @@ class Index:
     
     def wildcard_query(self, query):
 
+        inv = -1
+
         if query[0] == "*":
             r_part = query[::-1][:-1]
             node = self.root_inv
-            inv = True
-        if query[-1] == "*":
+            inv = 1
+        elif query[-1] == "*":
             r_part = query[:-1]
             node = self.root
-            inv = False
-
-
-        while node:
-            term = node.term[:len(r_part)]
-            if term == r_part:
-                # Thanks to this, we start searching only in the subtree starting from node
-                return self._wildcard(node, r_part, [], inv)
-            elif r_part < term:
-                node = node.left
-            else:
-                node = node.right
+            inv = 0
         
+        if inv == 1 or inv == 0:
+            while node:
+                term = node.term[:len(r_part)]
+                if term == r_part:
+                    # Thanks to this, we start searching only in the subtree starting from node
+                    return self._wildcard(node, r_part, [], inv)
+                elif r_part < term:
+                    node = node.left
+                else:
+                    node = node.right
+
+        else:
+            # permuted index wildcard query
+            # rotate the word to have the wildcard at last
+            query += "$"
+            i = query.find("*")
+            r_part = query[i+1:] + query[:i]
+            node = self.root
+            inv = -1
+            return self._wildcard(node, r_part, [], inv)
+
+
         return None
 
     def _wildcard(self, node, r_part, full_terms, inv):
@@ -321,11 +358,19 @@ class Index:
             full_terms = self._wildcard(node.left, r_part, full_terms, inv)
             full_terms = self._wildcard(node.right, r_part, full_terms, inv)
             
-            if node.term[:len(r_part)] == r_part:
-                if inv:
-                    full_terms.append(node.term[::-1])
-                else:
-                    full_terms.append(node.term)
-                return full_terms
+            if inv == -1: # if "a*b"
+                for perm in node.permutation:
+                    if perm[:len(r_part)] == r_part:
+                        full_terms.append(node.term)
+                        return full_terms
+
+            else:
+                if node.term[:len(r_part)] == r_part:
+                    if inv == 1: # if "*bc"
+                        full_terms.append(node.term[::-1])
+                    if inv == 0: # if "ab*"
+                        full_terms.append(node.term)
+                    return full_terms
+            
         
         return full_terms
