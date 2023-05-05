@@ -123,11 +123,16 @@ def read_files(file_names):
 
 
 
-file_name = ["cicero_1", "cicero_2", "cicero_3"]
+file_name = ["middlemarch", "Romeo and Juliet", "moby dick", "A room with a view"]
 documents = read_files(file_name)
 
 cicero = Index(documents)
 
-print(cicero.boolean_query("Rome and friend and fatherless"))
-print(cicero.wildcard_query("gorg*a"))
+print(cicero.boolean_query("Romeo and juliet"))
+print(cicero.wildcard_query("div*"))
 
+# new_doc = "Ehi, how it is my friend Giovanni? I like his cats"
+
+# cicero.add_doc(new_doc)
+
+# print(cicero.wildcard_query("*"))

@@ -51,7 +51,6 @@ class Index:
     
     def print_inorder(self):
         node = self.root
-        toprint = ""
         return self._inorder(node)
 
     def _inorder(self, node):
@@ -69,7 +68,7 @@ class Index:
         if node is None:
             new_node = Node(key, doc_id)
             # Creation of permutation index for wildcard queries in the word
-            new_node.permutation_word()
+            new_node.permutation_words()
             return new_node
         
         if key < node.term:
@@ -89,9 +88,9 @@ class Index:
             return Node(key, doc_id)
         
         if key < node.term:
-            node.left = self.insert(node.left, key, doc_id)
+            node.left = self.insert_inv(node.left, key, doc_id)
         else:
-            node.right = self.insert(node.right, key, doc_id)
+            node.right = self.insert_inv(node.right, key, doc_id)
         
         return node
     
@@ -122,7 +121,7 @@ class Index:
         
 
 
-    def _build_inverted_index(self, documents):
+    def _build_inverted_index(self, documents: list):
 
         # Sarebbe da sortare tutto l'array di documents e partire dal mediano
         # In questo modo si costruisce un albero bilanciato
@@ -165,31 +164,43 @@ class Index:
 
         return self.inverted_index
     
-    # da fareeee
-    def add_doc(self, doc):
 
-        new_doc_id = self.n_docs
+    def add_doc(self, doc: string):
+
+        doc_id = self.n_docs
         i = 0
-        for term in word_tokenize(doc):
-            # print(term)
-            term = term.casefold() #more aggressive that lower()
+        for term in word_tokenize(doc):   # also doc.split() can be used but it's difficult to caputure punctuation
+                
+            term = term.casefold() #lowercase, more aggressive that lower()
             term_split = term.split('\'')  # split apostrophe words and then save only important words
             for term_no_ap in term_split:
                 if term_no_ap not in stop_words and term_no_ap not in punctuation and term_no_ap != '': #remove stop words and punctation
                     term_no_ap = stemmer.stem(term_no_ap)
-                    if self.inverted_index.get(term_no_ap) is not None:
-                        if self.inverted_index[term_no_ap].get(new_doc_id) is not None:
-                            self.inverted_index[term_no_ap][new_doc_id].append(i) 
-                        else:
-                            self.inverted_index[term_no_ap][new_doc_id] = [i]
-                    else:
-                        self.inverted_index[term_no_ap] = {}
-                        self.inverted_index[term_no_ap][new_doc_id] = [i]
 
+                    #is already in the index this word?
+                    if self.inverted_index.get(term_no_ap) is not None:
+                        # term is already inserted into the bst
+                        # So we have to serach and modify his posting list
+                        self.root = self._add_doc_id(self.root, term_no_ap, doc_id)
+                        self.root_inv = self._add_doc_id(self.root_inv, term_no_ap[::-1], doc_id)
+
+                        if self.inverted_index[term_no_ap].get(doc_id) is not None:
+                            self.inverted_index[term_no_ap][doc_id].append(i) 
+                        else:
+                            self.inverted_index[term_no_ap][doc_id] = [i]
+
+                    else:
+
+                        # Now insert on the binary tree 
+                        self.root = self.insert(self.root, term_no_ap, doc_id)
+                        self.root_inv = self.insert_inv(self.root_inv, term_no_ap[::-1], doc_id)
+                        
+                        self.inverted_index[term_no_ap] = {}
+                        self.inverted_index[term_no_ap][doc_id] = [i]
 
             i += 1        
 
-        self.n_docs = new_doc_id + 1
+        self.n_docs = doc_id + 1
 
 
     def boolean_query(self, query_string):
@@ -217,13 +228,7 @@ class Index:
                     res = res.union(not_doc)
                 else:
                     res = res.union(self.inverted_index[split_query[i+1]].keys())
-            
-            # è come se fosse tutto un AND e non una frase consecutiva!!!
-            # Quindi sbagliato.. ELIMINO
-            # elif  i != len(split_query)-1: #avoid last one (index out of range)
-            #     if split_query[i+1].lower() != "not" or split_query[i+1].lower() != "and" or split_query[i+1].lower() != "and":
-            #         res = res.intersection(self.inverted_index[split_query[i+1]].keys())
-            #         print("ciao")
+
         return res
     
     
