@@ -1,5 +1,6 @@
 import time
 from indexV3 import Index
+import pickle
 
 
 """
@@ -123,16 +124,39 @@ def read_files(file_names):
 
 
 
-file_name = ["middlemarch", "Romeo and Juliet", "moby dick", "A room with a view"]
-documents = read_files(file_name)
+# file_name = ["middlemarch", "Romeo and Juliet", "moby dick", "A room with a view"]
+# documents = read_files(file_name)
 
-cicero = Index(documents)
+# cicero = Index(documents)
 
-print(cicero.boolean_query("Romeo and juliet"))
-print(cicero.wildcard_query("div*"))
+# print(cicero.boolean_query("Romeo and juliet"))
+
+# print(cicero.phrase_query("they saw many whales sporting in the ocean"))
+# print(cicero.wildcard_query("div*"))
 
 # new_doc = "Ehi, how it is my friend Giovanni? I like his cats"
 
 # cicero.add_doc(new_doc)
 
 # print(cicero.wildcard_query("*"))
+
+
+
+
+# FARE PHRASE QUERY
+
+
+
+
+with open("data/articles2.pkl", "rb") as f:
+    articles = pickle.load(f)
+
+with open("data/queries2.pkl", "rb") as f:
+    queries = pickle.load(f)
+
+bol = Index(articles)
+print("Query: ",queries[0])
+# print("Query: ",queries[0], " --> ",bol.phrase_query(queries[0]))
+
+
+print("ciao")
