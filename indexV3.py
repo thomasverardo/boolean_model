@@ -207,29 +207,34 @@ class Index:
 
         # Use set intersection, union and difference because more performant 
 
-        split_query = [stemmer.stem(term) for term in query_string.split(" ")]
+        split_query = [stemmer.stem(term.casefold()) for term in query_string.split(" ")]
         all_docs = set([d for d in range(self.n_docs)])
 
-        if split_query[0].casefold() == "not":
-            res = all_docs.difference(self.inverted_index[split_query[1]].keys())
-        else:
-            res = set(self.inverted_index[split_query[0]].keys())
-        for i in range(len(split_query)):
-            if split_query[i].lower() == "and":
-                if split_query[i+1].lower() == "not":
-                    not_doc = all_docs.difference(self.inverted_index[split_query[i+2]].keys())
-                    res = res.intersection(not_doc)
-                else:
-                    res = res.intersection(self.inverted_index[split_query[i+1]].keys())
+        try:
 
-            elif split_query[i].lower() == "or":
-                if split_query[i+1].lower() == "not":
-                    not_doc = all_docs.difference(self.inverted_index[split_query[i+2]].keys())
-                    res = res.union(not_doc)
-                else:
-                    res = res.union(self.inverted_index[split_query[i+1]].keys())
+            if split_query[0].casefold() == "not":
+                res = all_docs.difference(self.inverted_index[split_query[1]].keys())
+            else:
+                res = set(self.inverted_index[split_query[0]].keys())
+            for i in range(len(split_query)):
+                if split_query[i].lower() == "and":
+                    if split_query[i+1].lower() == "not":
+                        not_doc = all_docs.difference(self.inverted_index[split_query[i+2]].keys())
+                        res = res.intersection(not_doc)
+                    else:
+                        res = res.intersection(self.inverted_index[split_query[i+1]].keys())
 
-        return res
+                elif split_query[i].lower() == "or":
+                    if split_query[i+1].lower() == "not":
+                        not_doc = all_docs.difference(self.inverted_index[split_query[i+2]].keys())
+                        res = res.union(not_doc)
+                    else:
+                        res = res.union(self.inverted_index[split_query[i+1]].keys())
+
+            return res
+        except KeyError:
+            print("Term is not present")
+            return list()
     
     
     # per forza si usa la dictionary because ha le position
@@ -238,29 +243,40 @@ class Index:
         Private method to perform a phrase query on the inverted index.
         Given a list of terms, returns a list of documents that contain all of the terms in the specified order.
         """
-        docs = self.inverted_index[terms[0]]
-        for term in terms[1:]:
-            new_docs = {}
-            postings = self.inverted_index[term]
-            for doc_id, positions in postings.items():
-                if doc_id in docs:
-                    prev_positions = docs[doc_id]
-                    new_positions = []
-                    i = 0
-                    j = 0
-                    while i < len(prev_positions) and j < len(positions):
-                        if positions[j] == prev_positions[i] + 1:
-                            new_positions.append(positions[j])
-                            i += 1
-                            j += 1
-                        elif positions[j] > prev_positions[i] + 1:
-                            i += 1
-                        else:
-                            j += 1
-                    if new_positions:
-                        new_docs[doc_id] = new_positions
-            docs = new_docs
-        return list(docs.keys())
+        try:
+            docs = self.inverted_index[terms[0]]
+            for term in terms[1:]:
+                new_docs = {}
+                postings = self.inverted_index[term]
+                for doc_id, positions in postings.items():
+                    if doc_id in docs:
+                        prev_positions = docs[doc_id]
+                        new_positions = []
+                        i = 0
+                        j = 0
+                        while i < len(prev_positions) and j < len(positions):
+                            if positions[j] == prev_positions[i] + 1:
+                                new_positions.append(positions[j])
+                                i += 1
+                                j += 1
+                            elif positions[j] > prev_positions[i] + 1:
+                                i += 1
+                            else:
+                                j += 1
+                        if new_positions:
+                            new_docs[doc_id] = new_positions
+                docs = new_docs
+            return list(docs.keys())
+        except KeyError:
+            print("Term is not present")
+            return list()
+
+    
+    def phrase_query(self, query):
+        terms = [stemmer.stem(term.casefold()) for term in query.split(" ") 
+                 if term not in stop_words and term not in punctuation and term != '']
+        return self._phrase_query(terms)
+
     
     def edit_distance(self, u, v):
         """
@@ -300,7 +316,7 @@ class Index:
         Given a query string, returns a list of documents that contain all of the words in the specified order.
         If a word is not found in the inverted index, suggests the closest match using the Levenshtein distance.
         """
-        terms = [stemmer.stem(term) for term in query.split(" ")]
+        terms = [stemmer.stem(term.casefold()) for term in query.split(" ")]
         dictionary = list(self.inverted_index.keys())
         postings = []
         for term in terms:
@@ -314,9 +330,7 @@ class Index:
         return self._phrase_query(postings)
         
 
-    def phrase_query(self, query):
-        terms = [stemmer.stem(term) for term in query.split(" ")]
-        return self._phrase_query(terms)
+    
 
     
     def wildcard_query(self, query):

@@ -1,6 +1,8 @@
 import time
 from indexV3 import Index
 import pickle
+from cisi import CISI
+import numpy as np
 
 
 """
@@ -70,10 +72,13 @@ def timeit_test(fun, times):
 def read_files(file_names):
 
     documents = []
-    for file in file_names:
-        with open("data/"+file, "r") as f:
-            documents.append(f.read())
-        f.close()
+    try:
+        for file in file_names:
+            with open("data/"+file, "r") as f:
+                documents.append(f.read())
+            f.close()
+    except:
+        print("File doesn't exist")
     
     return documents
     
@@ -124,39 +129,64 @@ def read_files(file_names):
 
 
 
-# file_name = ["middlemarch", "Romeo and Juliet", "moby dick", "A room with a view"]
+# # file_name = ["middlemarch", "Romeo and Juliet", "moby dick", "A room with a view"]
+# file_name = ["moby dick"]
 # documents = read_files(file_name)
 
 # cicero = Index(documents)
 
 # print(cicero.boolean_query("Romeo and juliet"))
 
-# print(cicero.phrase_query("they saw many whales sporting in the ocean"))
+# # print(cicero.phrase_query("they saw many whales sporting in the ocean"))
+# print(cicero.phrase_query("they saw many whales"))
 # print(cicero.wildcard_query("div*"))
 
 # new_doc = "Ehi, how it is my friend Giovanni? I like his cats"
 
 # cicero.add_doc(new_doc)
 
-# print(cicero.wildcard_query("*"))
 
 
 
 
-# FARE PHRASE QUERY
 
 
 
 
-with open("data/articles2.pkl", "rb") as f:
-    articles = pickle.load(f)
+# with open("data/articles2.pkl", "rb") as f:
+#     articles = pickle.load(f)
 
-with open("data/queries2.pkl", "rb") as f:
-    queries = pickle.load(f)
+# with open("data/queries2.pkl", "rb") as f:
+#     queries = pickle.load(f)
 
-bol = Index(articles)
-print("Query: ",queries[0])
+# with open("data/relevance.pkl", "rb") as f:
+#     relevance = pickle.load(f)
+
+# bol = Index(articles)
 # print("Query: ",queries[0], " --> ",bol.phrase_query(queries[0]))
+
+
+
+
+
+
+
+cisi = CISI()
+## Here we check some statistics and info of CISI dataset
+
+print('Read %s documents, %s queries and %s mappings from CISI dataset' % 
+      (len(cisi.doc_set), len(cisi.qry_set), len(cisi.rel_set)))
+
+number_of_rel_docs = [len(value) for key, value in cisi.rel_set.items()]
+print('Average %.2f and %d min number of relevant documents by query ' % 
+      (np.mean(number_of_rel_docs), np.min(number_of_rel_docs)))
+
+print('Queries without relevant documents: ', 
+      np.setdiff1d(list(cisi.qry_set.keys()),list(cisi.rel_set.keys())))
+
+
+
+
 
 
 print("ciao")
