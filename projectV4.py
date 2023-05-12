@@ -1,8 +1,9 @@
 import time
 from indexV4 import Index
 import pickle
-import numpy as np
 from cisi import CISI
+import numpy as np
+import pandas as pd
 
 
 """
@@ -57,6 +58,10 @@ from cisi import CISI
 
     - When constructing bst, we have to start from the middle of all words.
 
+    
+
+    - this without lemmatination and not removing stop words, is best suited for
+        phrases that are small and with stop words like "no harn in"
 """
 
 
@@ -74,18 +79,35 @@ def read_files(file_names):
     documents = []
     try:
         for file in file_names:
-            with open("data/"+file, "r") as f:
-                documents.append(f.read())
+            with open("data/gutenberg/"+file, "r") as f:
+                documents.append((file,f.read()))
             f.close()
     except:
         print("File doesn't exist")
     
     return documents
+
+def load_index(it_exixt = False):
+
+    if not it_exixt:
+        file_name = ["alice_edited", "moby_dick_edited", "romeo_and_juliet_edited", "a_room_with_a_view_edited"]
+        # file_name = ["moby dick"]
+        documents = read_files(file_name)
+
+        gut_index = Index(documents)
+
+        with open("data/indexV4.pickle", "wb") as f:
+            pickle.dump(gut_index, f)
+    
+    else:
+        with open("data/indexV4.pickle", "rb") as f:
+            gut_index = pickle.load(f)
+
+    return gut_index
     
 
 
 #           MAIN
-
 
 
 # with open("data/lorem_ipsum", "r") as f:
@@ -129,22 +151,31 @@ def read_files(file_names):
 
 
 
-# # file_name = ["middlemarch", "Romeo and Juliet", "moby dick", "A room with a view"]
-# file_name = ["moby dick"]
-# documents = read_files(file_name)
 
-# cicero = Index(documents)
+gut_index = load_index(True)
 
-# print(cicero.boolean_query("Romeo and juliet"))
 
-# print(cicero.phrase_query("they saw many whales sporting in the ocean"))
-# # print(cicero.phrase_query("they saw many whales"))
-# print(cicero.wildcard_query("div*"))
+# print(gut_index.boolean_query("Romeo and juliet"))
+
+# # print(cicero.phrase_query("they saw many whales sporting in the ocean"))
+# print(gut_index.phrase_query("they saw many whales"))
+# print(gut_index.wildcard_query("div*"))
 
 # new_doc = "Ehi, how it is my friend Giovanni? I like his cats"
 
 # cicero.add_doc(new_doc)
 
+
+
+query_df = pd.read_csv("data/gutenberg/query.csv", header=None)
+result = []
+for row in query_df.iloc:
+    query = row[0]
+    title = row[1]
+    result.append(gut_index.phrase_query(query))
+query_df["result"] = result
+
+print(query_df)
 
 
 
@@ -166,18 +197,25 @@ def read_files(file_names):
 # print("Query: ",queries[0], " --> ",bol.phrase_query(queries[0]))
 
 
-cisi = CISI()
-## Here we check some statistics and info of CISI dataset
 
-print('Read %s documents, %s queries and %s mappings from CISI dataset' % 
-      (len(cisi.doc_set), len(cisi.qry_set), len(cisi.rel_set)))
 
-number_of_rel_docs = [len(value) for key, value in cisi.rel_set.items()]
-print('Average %.2f and %d min number of relevant documents by query ' % 
-      (np.mean(number_of_rel_docs), np.min(number_of_rel_docs)))
 
-print('Queries without relevant documents: ', 
-      np.setdiff1d(list(cisi.qry_set.keys()),list(cisi.rel_set.keys())))
+
+
+# cisi = CISI()
+# ## Here we check some statistics and info of CISI dataset
+
+# print('Read %s documents, %s queries and %s mappings from CISI dataset' % 
+#       (len(cisi.doc_set), len(cisi.qry_set), len(cisi.rel_set)))
+
+# number_of_rel_docs = [len(value) for key, value in cisi.rel_set.items()]
+# print('Average %.2f and %d min number of relevant documents by query ' % 
+#       (np.mean(number_of_rel_docs), np.min(number_of_rel_docs)))
+
+# print('Queries without relevant documents: ', 
+#       np.setdiff1d(list(cisi.qry_set.keys()),list(cisi.rel_set.keys())))
+
+
 
 
 

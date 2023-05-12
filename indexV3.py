@@ -37,7 +37,7 @@ class Node:
 
 class Index:
 
-    def __init__(self, documents: list):
+    def __init__(self, documents: tuple):
         self.inverted_index = {}
         self.n_docs = 0
         self.root = None
@@ -121,13 +121,13 @@ class Index:
         
 
 
-    def _build_inverted_index(self, documents: list):
+    def _build_inverted_index(self, documents: tuple):
 
         # Sarebbe da sortare tutto l'array di documents e partire dal mediano
         # In questo modo si costruisce un albero bilanciato
         # Usare list.sort() tha as O(nlogn) time complexity
 
-        for doc_id, doc in enumerate(documents):
+        for title, doc in documents:
             i = 0 #It's the position int he document of the term
             for term in word_tokenize(doc):   # also doc.split() can be used but it's difficult to caputure punctuation
                 
@@ -141,25 +141,25 @@ class Index:
                         if self.inverted_index.get(term_no_ap) is not None:
                             # term is already inserted into the bst
                             # So we have to serach and modify his posting list
-                            self.root = self._add_doc_id(self.root, term_no_ap, doc_id)
-                            self.root_inv = self._add_doc_id(self.root_inv, term_no_ap[::-1], doc_id)
+                            self.root = self._add_doc_id(self.root, term_no_ap, title)
+                            self.root_inv = self._add_doc_id(self.root_inv, term_no_ap[::-1], title)
 
-                            if self.inverted_index[term_no_ap].get(doc_id) is not None:
-                                self.inverted_index[term_no_ap][doc_id].append(i) 
+                            if self.inverted_index[term_no_ap].get(title) is not None:
+                                self.inverted_index[term_no_ap][title].append(i) 
                             else:
-                                self.inverted_index[term_no_ap][doc_id] = [i]
+                                self.inverted_index[term_no_ap][title] = [i]
 
                         else:
 
                             # Now insert on the binary tree 
-                            self.root = self.insert(self.root, term_no_ap, doc_id)
-                            self.root_inv = self.insert_inv(self.root_inv, term_no_ap[::-1], doc_id)
+                            self.root = self.insert(self.root, term_no_ap, title)
+                            self.root_inv = self.insert_inv(self.root_inv, term_no_ap[::-1], title)
                             
                             self.inverted_index[term_no_ap] = {}
-                            self.inverted_index[term_no_ap][doc_id] = [i]
+                            self.inverted_index[term_no_ap][title] = [i]
 
 
-                i += 1
+                    i += 1
         self.n_docs = len(documents)
 
         return self.inverted_index
@@ -198,7 +198,7 @@ class Index:
                         self.inverted_index[term_no_ap] = {}
                         self.inverted_index[term_no_ap][doc_id] = [i]
 
-            i += 1        
+                i += 1        
 
         self.n_docs = doc_id + 1
 
@@ -233,7 +233,7 @@ class Index:
 
             return res
         except KeyError:
-            print("Term is not present")
+            # print("Term is not present")
             return list()
     
     
@@ -268,13 +268,14 @@ class Index:
                 docs = new_docs
             return list(docs.keys())
         except KeyError:
-            print("Term is not present")
+            # print("Term is not present")
             return list()
 
     
     def phrase_query(self, query):
-        terms = [stemmer.stem(term.casefold()) for term in query.split(" ") 
+        terms = [stemmer.stem(term.casefold()) for term in word_tokenize(query) 
                  if term not in stop_words and term not in punctuation and term != '']
+        # terms = [term.split('\'') for term in terms]
         return self._phrase_query(terms)
 
     
@@ -316,7 +317,7 @@ class Index:
         Given a query string, returns a list of documents that contain all of the words in the specified order.
         If a word is not found in the inverted index, suggests the closest match using the Levenshtein distance.
         """
-        terms = [stemmer.stem(term.casefold()) for term in query.split(" ")]
+        terms = [stemmer.stem(term.casefold()) for term in query.split(" ")] # wordtokenize
         dictionary = list(self.inverted_index.keys())
         postings = []
         for term in terms:
