@@ -177,6 +177,8 @@ query_df["result"] = result
 
 print(query_df)
 
+print(gut_index.wildcard_query("rom*"))
+
 
 
 

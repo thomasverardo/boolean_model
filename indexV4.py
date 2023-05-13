@@ -17,7 +17,7 @@ class Node:
     def __init__(self, term: string, doc_id: int):
         self.term = term
         self.posting = [doc_id]
-        self.permutation = tuple() # forse serve solo per root e non root_inv
+        self.permutation = tuple() # serve solo per root e non root_inv
         self.left = None
         self.right = None
 
@@ -109,15 +109,15 @@ class Index:
         return None
     
     
-    def _add_doc_id(self, node, term, i):
+    def _add_doc_id(self, node, term, doc_id):
         
         if node.term == term:
-            node.posting.append(i)
+            node.posting.append(doc_id)
         
         elif term < node.term:
-            node.left = self._add_doc_id(node.left, term, i)
+            node.left = self._add_doc_id(node.left, term, doc_id)
         else:
-            node.right = self._add_doc_id(node.right, term, i)
+            node.right = self._add_doc_id(node.right, term, doc_id)
 
         return node
         
@@ -360,7 +360,7 @@ class Index:
         If a word is not found in the inverted index, suggests the closest match using the Levenshtein distance.
         """
         terms = [term.casefold() for term in query.split(" ")]
-        dictionary = list(self.inverted_index.keys())
+        dictionary = list(self.inverted_index_extended.keys())
         postings = []
         for term in terms:
             if term in dictionary:
@@ -394,7 +394,8 @@ class Index:
                 term = node.term[:len(r_part)]
                 if term == r_part:
                     # Thanks to this, we start searching only in the subtree starting from node
-                    return self._wildcard(node, r_part, [], inv)
+                    result = self._wildcard(node, r_part, [], inv)
+                    return [(list(set(docs)), wild) for docs, wild in result]
                 elif r_part < term:
                     node = node.left
                 else:
@@ -408,8 +409,8 @@ class Index:
             r_part = query[i+1:] + query[:i]
             node = self.root
             inv = -1
-            return self._wildcard(node, r_part, [], inv)
-
+            result = self._wildcard(node, r_part, [], inv)
+            return [(list(set(docs)), wild) for docs, wild in result]
 
         return None
 
@@ -423,15 +424,15 @@ class Index:
             if inv == -1: # if "a*b"
                 for perm in node.permutation:
                     if perm[:len(r_part)] == r_part:
-                        full_terms.append(node.term)
+                        full_terms.append((node.posting,node.term))
                         return full_terms
 
             else:
                 if node.term[:len(r_part)] == r_part:
                     if inv == 1: # if "*bc"
-                        full_terms.append(node.term[::-1])
+                        full_terms.append((node.posting, node.term[::-1]))
                     if inv == 0: # if "ab*"
-                        full_terms.append(node.term)
+                        full_terms.append((node.posting,node.term))
                     return full_terms
             
         
