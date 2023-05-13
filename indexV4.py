@@ -39,10 +39,12 @@ class Index:
 
     def __init__(self, documents: tuple):
         self.inverted_index = {}
+        self.inverted_index_extended = {}
         self.n_docs = 0
         self.root = None
         self.root_inv = None
-        self._build_inverted_index(documents)
+        self._build_inverted_index_reduced(documents)
+        self._build_inverted_index_extended(documents)
 
     def __str__(self):
         return str(self.inverted_index)
@@ -120,8 +122,54 @@ class Index:
         return node
         
 
+    def _build_inverted_index_reduced(self, documents: tuple):
 
-    def _build_inverted_index(self, documents: tuple):
+        # Sarebbe da sortare tutto l'array di documents e partire dal mediano
+        # In questo modo si costruisce un albero bilanciato
+        # Usare list.sort() tha as O(nlogn) time complexity
+
+        for title, doc in documents:
+            i = 0 #It's the position int he document of the term
+            for term in word_tokenize(doc):   # also doc.split() can be used but it's difficult to caputure punctuation
+                
+                term = term.casefold() #lowercase, more aggressive that lower()
+                term_split = term.split('\'')  # split apostrophe words and then save only important words
+                for term_no_ap in term_split:
+                    if term_no_ap not in stop_words and term_no_ap not in punctuation and term_no_ap != '': #remove stop words and punctation
+                        term_no_ap = stemmer.stem(term_no_ap)
+
+                        #is already in the index this word?
+                        if self.inverted_index.get(term_no_ap) is not None:
+                            # term is already inserted into the bst
+                            # So we have to serach and modify his posting list
+                            self.root = self._add_doc_id(self.root, term_no_ap, title)
+                            self.root_inv = self._add_doc_id(self.root_inv, term_no_ap[::-1], title)
+
+                            if self.inverted_index[term_no_ap].get(title) is not None:
+                                self.inverted_index[term_no_ap][title].append(i) 
+                            else:
+                                self.inverted_index[term_no_ap][title] = [i]
+
+                        else:
+
+                            # Now insert on the binary tree 
+                            self.root = self.insert(self.root, term_no_ap, title)
+                            self.root_inv = self.insert_inv(self.root_inv, term_no_ap[::-1], title)
+                            
+                            self.inverted_index[term_no_ap] = {}
+                            self.inverted_index[term_no_ap][title] = [i]
+
+
+                    i += 1
+        self.n_docs = len(documents)
+
+        return self.inverted_index
+    
+
+    def _build_inverted_index_extended(self, documents: tuple):
+        """
+            This will be used only in phrase query
+        """
 
         # Sarebbe da sortare tutto l'array di documents e partire dal mediano
         # In questo modo si costruisce un albero bilanciato
@@ -136,31 +184,24 @@ class Index:
                 for term_no_ap in term_split:
 
                     #is already in the index this word?
-                    if self.inverted_index.get(term_no_ap) is not None:
-                        # term is already inserted into the bst
-                        # So we have to serach and modify his posting list
-                        self.root = self._add_doc_id(self.root, term_no_ap, title)
-                        self.root_inv = self._add_doc_id(self.root_inv, term_no_ap[::-1], title)
+                    if self.inverted_index_extended.get(term_no_ap) is not None:
 
-                        if self.inverted_index[term_no_ap].get(title) is not None:
-                            self.inverted_index[term_no_ap][title].append(i) 
+                    #NON inserisco nel BST
+                        if self.inverted_index_extended[term_no_ap].get(title) is not None:
+                            self.inverted_index_extended[term_no_ap][title].append(i) 
                         else:
-                            self.inverted_index[term_no_ap][title] = [i]
+                            self.inverted_index_extended[term_no_ap][title] = [i]
 
                     else:
-
-                        # Now insert on the binary tree 
-                        self.root = self.insert(self.root, term_no_ap, title)
-                        self.root_inv = self.insert_inv(self.root_inv, term_no_ap[::-1], title)
                         
-                        self.inverted_index[term_no_ap] = {}
-                        self.inverted_index[term_no_ap][title] = [i]
+                        self.inverted_index_extended[term_no_ap] = {}
+                        self.inverted_index_extended[term_no_ap][title] = [i]
 
 
                     i += 1
         self.n_docs = len(documents)
 
-        return self.inverted_index
+        return self.inverted_index_extended
     
 
     def add_doc(self, doc: string):
@@ -240,10 +281,10 @@ class Index:
         Given a list of terms, returns a list of documents that contain all of the terms in the specified order.
         """
         try:
-            docs = self.inverted_index[terms[0]]
+            docs = self.inverted_index_extended[terms[0]]
             for term in terms[1:]:
                 new_docs = {}
-                postings = self.inverted_index[term]
+                postings = self.inverted_index_extended[term]
                 for doc_id, positions in postings.items():
                     if doc_id in docs:
                         prev_positions = docs[doc_id]
