@@ -13,10 +13,10 @@ def replace_newline_with_space(text):
 
 
 # Example usage
-with open("data/gutenberg/A room with a view", "r") as f:
+with open("data/gutenberg/pride", "r") as f:
     file = replace_newline_with_space(f.read())
 f.close()
 
-with open("data/gutenberg/a_room_with_a_view_edited", "w") as f:
+with open("data/gutenberg/pride_and_prejudice_edited", "w") as f:
     f.write(file)
 f.close()

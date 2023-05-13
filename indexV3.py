@@ -2,6 +2,7 @@ import string
 # Ricordarsi che per usare queste librerie nltk, bisogna installare i database, che vengono salvati in /home/thomas/nltk_data...
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+from ntlk.tokenize import wordpunct_tokenize
 from nltk.stem import PorterStemmer
 
 

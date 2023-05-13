@@ -90,7 +90,7 @@ def read_files(file_names):
 def load_index(it_exixt = False):
 
     if not it_exixt:
-        file_name = ["alice_edited", "moby_dick_edited", "romeo_and_juliet_edited", "a_room_with_a_view_edited"]
+        file_name = ["alice_edited", "moby_dick_edited", "romeo_and_juliet_edited", "pride_and_prejudice_edited"]
         # file_name = ["moby dick"]
         documents = read_files(file_name)
 
