@@ -104,6 +104,28 @@ def load_index(it_exixt = False):
             gut_index = pickle.load(f)
 
     return gut_index
+
+
+def test_phrase(gut_index):
+
+    query_df = pd.read_csv("data/gutenberg/query.csv", header=None)
+    result = []
+    for row in query_df.iloc:
+        query = row[0]
+        title = row[1]
+        result.append(gut_index.phrase_query(query))
+    query_df["result"] = result
+
+    return query_df
+
+
+def test_wildcard(gut_index, wild: list):
+    result = {}
+    for query in wild:
+        result[query] = gut_index.wildcard_query(query)
+    
+    result_df = pd.DataFrame(result.items())
+    return result_df
     
 
 
@@ -167,17 +189,10 @@ gut_index = load_index(True)
 
 
 
-query_df = pd.read_csv("data/gutenberg/query.csv", header=None)
-result = []
-for row in query_df.iloc:
-    query = row[0]
-    title = row[1]
-    result.append(gut_index.phrase_query(query))
-query_df["result"] = result
 
-print(query_df)
+print(test_phrase(gut_index))
 
-print(gut_index.wildcard_query("rom*"))
+print(test_wildcard(gut_index, ["rom*", "*om", "r*m"]))
 
 
 

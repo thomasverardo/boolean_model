@@ -395,6 +395,8 @@ class Index:
                 if term == r_part:
                     # Thanks to this, we start searching only in the subtree starting from node
                     result = self._wildcard(node, r_part, [], inv)
+                    # list comprension for take only one time the docs
+                    # From [([docs1, doc1, doc2], "aaa")] to [([docs1, doc2], "aaa")]
                     return [(list(set(docs)), wild) for docs, wild in result]
                 elif r_part < term:
                     node = node.left
@@ -406,11 +408,15 @@ class Index:
             # rotate the word to have the wildcard at last
             query += "$"
             i = query.find("*")
-            r_part = query[i+1:] + query[:i]
-            node = self.root
-            inv = -1
-            result = self._wildcard(node, r_part, [], inv)
-            return [(list(set(docs)), wild) for docs, wild in result]
+            if i != -1:
+                r_part = query[i+1:] + query[:i]
+                node = self.root
+                inv = -1
+                result = self._wildcard(node, r_part, [], inv)
+                return [(list(set(docs)), wild) for docs, wild in result]
+            else:
+                print("Query without *")
+                return []
 
         return None
 
