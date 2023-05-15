@@ -183,19 +183,21 @@ class Index:
                 term_split = term.split('\'')  # split apostrophe words and then save only important words
                 for term_no_ap in term_split:
 
-                    #is already in the index this word?
-                    if self.inverted_index_extended.get(term_no_ap) is not None:
+                    if term_no_ap != '':
 
-                    #NON inserisco nel BST
-                        if self.inverted_index_extended[term_no_ap].get(title) is not None:
-                            self.inverted_index_extended[term_no_ap][title].append(i) 
+                        #is already in the index this word?
+                        if self.inverted_index_extended.get(term_no_ap) is not None:
+
+                        #NON inserisco nel BST
+                            if self.inverted_index_extended[term_no_ap].get(title) is not None:
+                                self.inverted_index_extended[term_no_ap][title].append(i) 
+                            else:
+                                self.inverted_index_extended[term_no_ap][title] = [i]
+
                         else:
+                            
+                            self.inverted_index_extended[term_no_ap] = {}
                             self.inverted_index_extended[term_no_ap][title] = [i]
-
-                    else:
-                        
-                        self.inverted_index_extended[term_no_ap] = {}
-                        self.inverted_index_extended[term_no_ap][title] = [i]
 
 
                     i += 1
@@ -316,7 +318,8 @@ class Index:
             term = term.casefold()
             term = term.split('\'') 
             for t in term:
-                new_terms.append(t)
+                if t != '':
+                    new_terms.append(t)
         
         return self._phrase_query(new_terms)
 
@@ -359,7 +362,14 @@ class Index:
         Given a query string, returns a list of documents that contain all of the words in the specified order.
         If a word is not found in the inverted index, suggests the closest match using the Levenshtein distance.
         """
-        terms = [term.casefold() for term in query.split(" ")]
+        terms = []
+        for term in word_tokenize(query):
+            term = term.casefold()
+            term = term.split('\'') 
+            for t in term:
+                if t != '':
+                    terms.append(t)
+        
         dictionary = list(self.inverted_index_extended.keys())
         postings = []
         for term in terms:

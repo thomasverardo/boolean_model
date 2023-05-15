@@ -90,7 +90,7 @@ def read_files(file_names):
 def load_index(it_exixt = False):
 
     if not it_exixt:
-        file_name = ["alice_edited", "moby_dick_edited", "romeo_and_juliet_edited", "pride_and_prejudice_edited"]
+        file_name = ["alice_in_wonderland", "moby_dick", "romeo_and_juliet", "pride_and_prejudice"]
         # file_name = ["moby dick"]
         documents = read_files(file_name)
 
@@ -123,6 +123,14 @@ def test_wildcard(gut_index, wild: list):
     result = {}
     for query in wild:
         result[query] = gut_index.wildcard_query(query)
+    
+    result_df = pd.DataFrame(result.items())
+    return result_df
+
+def test_boolean(gut_index, boolean: list):
+    result = {}
+    for query in boolean:
+        result[query] = gut_index.boolean_query(query)
     
     result_df = pd.DataFrame(result.items())
     return result_df
@@ -188,11 +196,14 @@ gut_index = load_index(True)
 # cicero.add_doc(new_doc)
 
 
-
+print(test_boolean(gut_index, ["romeo and juliet", "romeo or juliet", 
+                               "romeo and not juliet", "chapter", "william and watson"]))
 
 print(test_phrase(gut_index))
 
 print(test_wildcard(gut_index, ["rom*", "*om", "r*m"]))
+
+print(gut_index.phrase_query_sc("Thud with a koss I die."))
 
 
 
