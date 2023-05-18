@@ -3,6 +3,7 @@ import string
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
+from unidecode import unidecode
 
 
 
@@ -216,28 +217,28 @@ class Index:
             term_split = term.split('\'')  # split apostrophe words and then save only important words
             for term_no_ap in term_split:
 
-                    #is already in the index this word?
-                    if self.inverted_index.get(term_no_ap) is not None:
-                        # term is already inserted into the bst
-                        # So we have to serach and modify his posting list
-                        self.root = self._add_doc_id(self.root, term_no_ap, doc_id)
-                        self.root_inv = self._add_doc_id(self.root_inv, term_no_ap[::-1], doc_id)
+                #is already in the index this word?
+                if self.inverted_index.get(term_no_ap) is not None:
+                    # term is already inserted into the bst
+                    # So we have to serach and modify his posting list
+                    self.root = self._add_doc_id(self.root, term_no_ap, doc_id)
+                    self.root_inv = self._add_doc_id(self.root_inv, term_no_ap[::-1], doc_id)
 
-                        if self.inverted_index[term_no_ap].get(doc_id) is not None:
-                            self.inverted_index[term_no_ap][doc_id].append(i) 
-                        else:
-                            self.inverted_index[term_no_ap][doc_id] = [i]
-
+                    if self.inverted_index[term_no_ap].get(doc_id) is not None:
+                        self.inverted_index[term_no_ap][doc_id].append(i) 
                     else:
-
-                        # Now insert on the binary tree 
-                        self.root = self.insert(self.root, term_no_ap, doc_id)
-                        self.root_inv = self.insert_inv(self.root_inv, term_no_ap[::-1], doc_id)
-                        
-                        self.inverted_index[term_no_ap] = {}
                         self.inverted_index[term_no_ap][doc_id] = [i]
 
-            i += 1        
+                else:
+
+                    # Now insert on the binary tree 
+                    self.root = self.insert(self.root, term_no_ap, doc_id)
+                    self.root_inv = self.insert_inv(self.root_inv, term_no_ap[::-1], doc_id)
+                    
+                    self.inverted_index[term_no_ap] = {}
+                    self.inverted_index[term_no_ap][doc_id] = [i]
+
+                i += 1        
 
         self.n_docs = doc_id + 1
 
